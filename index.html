@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ligne R · Gare de Lyon</title>
+<meta name="theme-color" content="#0c2350">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ligne R">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<style>
+:root{
+  --board:#0c2350;      /* bleu tableau de gare */
+  --board-2:#13306a;
+  --ink:#f4f6fb;
+  --muted:#9fb0d4;
+  --signal:#ffd23f;     /* jaune afficheur */
+  --ligne:#f3a4ba;      /* rose ligne R */
+  --alert:#ff8a5c;
+  --ok:#7fd8a8;
+  --cond:"Avenir Next Condensed","Roboto Condensed","Arial Narrow",sans-serif-condensed,system-ui,sans-serif;
+  --text:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--board);color:var(--ink);font-family:var(--text);-webkit-text-size-adjust:100%}
+body{min-height:100vh;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--signal);outline-offset:2px}
+a{color:var(--signal)}
+
+header{display:flex;align-items:center;gap:12px;padding:14px 16px 10px;position:sticky;top:0;background:var(--board);z-index:2;border-bottom:1px solid var(--board-2)}
+.pastille{flex:none;width:40px;height:40px;border-radius:10px;background:var(--ligne);color:var(--board);display:grid;place-items:center;font:800 26px/1 var(--cond)}
+.titre{flex:1;min-width:0}
+.titre h1{margin:0;font:700 20px/1.15 var(--cond);letter-spacing:.01em}
+.titre p{margin:2px 0 0;font-size:13px;color:var(--muted)}
+.icone{background:none;border:0;padding:8px;border-radius:10px;line-height:0}
+.icone svg{width:24px;height:24px;stroke:var(--ink);fill:none;stroke-width:2}
+.icone.tourne svg{animation:tour 1s linear infinite}
+@keyframes tour{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.icone.tourne svg{animation:none}}
+
+.sources{display:flex;gap:6px;flex-wrap:wrap;padding:10px 16px 0}
+.src{font-size:12px;padding:4px 9px;border-radius:99px;background:var(--board-2);color:var(--muted);border:0}
+.src[data-etat=ok]::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--ok);margin-right:6px;vertical-align:1px}
+.src[data-etat=err]{color:var(--alert)}
+.src[data-etat=err]::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--alert);margin-right:6px;vertical-align:1px}
+.src[data-etat=off]{opacity:.55}
+
+#trafic{margin:12px 16px 0}
+.perturb{background:#2a2a1a;border-left:4px solid var(--signal);border-radius:6px;padding:10px 12px;margin-bottom:8px}
+.perturb.grave{border-left-color:var(--alert);background:#3a1f1c}
+.perturb summary{cursor:pointer;font-weight:600;font-size:15px;line-height:1.35;list-style:none}
+.perturb summary::-webkit-details-marker{display:none}
+.perturb .meta{font-size:12px;color:var(--muted);margin-top:4px}
+.perturb .corps{font-size:14px;line-height:1.45;margin-top:8px;color:#dfe5f3;white-space:pre-line}
+.calme{font-size:14px;color:var(--ok);padding:4px 0}
+
+.resume{padding:14px 16px 4px;font-size:13px;color:var(--muted)}
+
+ol#tableau{list-style:none;margin:0;padding:0}
+.train{display:grid;grid-template-columns:minmax(64px,auto) 1fr 52px;gap:4px 12px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--board-2)}
+.train:nth-child(odd){background:rgba(255,255,255,.025)}
+.heure{font:700 30px/1 var(--cond);color:var(--signal);font-variant-numeric:tabular-nums}
+.heure s{display:block;font:500 15px/1.2 var(--cond);color:var(--muted);margin-top:3px}
+.dest{font:600 21px/1.15 var(--cond);overflow-wrap:anywhere}
+.info{font-size:12.5px;color:var(--muted);margin-top:3px}
+.voie{width:52px;height:52px;border:2px solid var(--ink);border-radius:8px;display:grid;place-items:center;text-align:center}
+.voie b{font:700 26px/1 var(--cond)}
+.voie small{display:block;font-size:9.5px;color:var(--muted);margin-bottom:-2px}
+.voie.vide{border-style:dashed;border-color:var(--muted);color:var(--muted)}
+.croise{grid-column:2 / 4;display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-size:12.5px}
+.croise .t{color:#c9d3ea;font-variant-numeric:tabular-nums}
+.croise .paire{white-space:nowrap;display:inline-flex;gap:10px}
+.verdict{padding:2px 8px;border-radius:5px;font-weight:600;font-size:12px}
+.v-ok{background:rgba(127,216,168,.15);color:var(--ok)}
+.v-ecart{background:rgba(255,210,63,.16);color:var(--signal)}
+.v-seul{background:rgba(159,176,212,.15);color:var(--muted)}
+.v-supp{background:rgba(255,138,92,.18);color:var(--alert)}
+.retard{color:var(--alert);font-weight:600}
+.train.supprime .heure,.train.supprime .dest{color:var(--alert);text-decoration:line-through;text-decoration-thickness:2px}
+.notes{grid-column:2 / 4;font-size:12.5px;color:#e9c9b8;line-height:1.4}
+
+.vide-etat{padding:28px 16px;text-align:center;color:var(--muted);line-height:1.5}
+.vide-etat button{margin-top:12px}
+.btn{background:var(--signal);color:var(--board);border:0;border-radius:10px;padding:11px 16px;font-weight:700}
+.btn.sec{background:var(--board-2);color:var(--ink)}
+
+footer{padding:18px 16px 36px;font-size:13px;color:var(--muted);line-height:1.6}
+footer h2{font:600 16px/1.2 var(--cond);color:var(--ink);margin:0 0 6px}
+footer ul{margin:0 0 14px;padding-left:18px}
+
+dialog{border:0;border-radius:16px;padding:0;width:min(520px,94vw);background:#f4f6fb;color:#0c2350}
+dialog::backdrop{background:rgba(5,12,30,.7)}
+dialog form{padding:18px}
+dialog h2{margin:0 0 4px;font:700 22px/1.2 var(--cond)}
+dialog p.aide{margin:0 0 14px;font-size:13.5px;color:#43507a;line-height:1.45}
+dialog label{display:block;font-size:13px;font-weight:600;margin:12px 0 4px}
+dialog input,dialog select{width:100%;padding:10px;border:1px solid #b9c3dd;border-radius:8px;font:15px var(--text);background:#fff;color:#0c2350}
+dialog .petit{font-size:12px;color:#5a6690;margin-top:3px;line-height:1.4}
+dialog details{margin-top:14px;font-size:13px}
+dialog .actions{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap}
+dialog .btn.sec{background:#dfe5f3;color:#0c2350}
+.case{display:flex;gap:8px;align-items:center;margin-top:12px;font-size:14px}
+.case input{width:auto}
+</style>
+</head>
+<body>
+<header>
+  <div class="pastille" aria-hidden="true">R</div>
+  <div class="titre">
+    <h1>Départs Gare de Lyon</h1>
+    <p id="maj">Chargement…</p>
+  </div>
+  <button class="icone" id="btn-maj" aria-label="Actualiser">
+    <svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>
+  </button>
+  <button class="icone" id="btn-reglages" aria-label="Réglages">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+  </button>
+</header>
+
+<div class="sources" id="sources" aria-live="polite"></div>
+<section id="trafic" aria-label="Info trafic ligne R"></section>
+<div class="resume" id="resume"></div>
+<ol id="tableau" aria-label="Prochains départs"></ol>
+
+<footer>
+  <h2>Vérifier ailleurs</h2>
+  <ul>
+    <li><a href="https://www.garesetconnexions.sncf/fr/gares-services/paris-gare-de-lyon/horaires" target="_blank" rel="noopener">Tableau des départs Gares &amp; Connexions</a> (voies, grandes lignes)</li>
+    <li><a href="https://www.transilien.com/lignes/rer-trains/ligne-r" target="_blank" rel="noopener">Ligne R sur Transilien SNCF</a> (travaux, info trafic)</li>
+    <li><a href="https://www.bonjour-ratp.fr/fr/lignes-transilien/ligne-r/" target="_blank" rel="noopener">Ligne R sur Bonjour RATP</a></li>
+    <li><a href="https://www.iledefrance-mobilites.fr/info-trafic" target="_blank" rel="noopener">Info trafic Île-de-France Mobilités</a></li>
+  </ul>
+  <p>Horaires croisés entre la source Île-de-France Mobilités (celle qu'utilisent aussi les applis RATP et IDFM) et l'API SNCF. Un écart de 2 minutes ou plus entre les deux est signalé.</p>
+</footer>
+
+<dialog id="reglages">
+  <form method="dialog" id="form-reglages">
+    <h2>Réglages</h2>
+    <p class="aide">Les clés restent sur cet appareil (stockage local du navigateur) ; elles ne sont jamais écrites dans le dépôt GitHub.</p>
+
+    <label for="f-prim">Clé API PRIM (Île-de-France Mobilités)</label>
+    <input id="f-prim" autocomplete="off" spellcheck="false">
+    <div class="petit">Gratuite : créer un compte sur prim.iledefrance-mobilites.fr, puis « Mon jeton d'API ».</div>
+
+    <label for="f-sncf">Clé API SNCF</label>
+    <input id="f-sncf" autocomplete="off" spellcheck="false">
+    <div class="petit">Gratuite : formulaire sur numerique.sncf.com/startup/api, la clé arrive par e-mail.</div>
+
+    <label for="f-proxy">Adresse du relais (facultatif)</label>
+    <input id="f-proxy" placeholder="https://ligne-r.votre-compte.workers.dev" autocomplete="off" spellcheck="false">
+    <div class="petit">À remplir seulement si le navigateur bloque les appels directs (source en rouge « bloqué par le navigateur »). Voir le README. Avec un relais, les clés sont stockées dans le relais et les champs ci-dessus peuvent rester vides.</div>
+
+    <label class="case"><input type="checkbox" id="f-demo"> Mode démo (horaires fictifs, pour essayer l'affichage)</label>
+
+    <details>
+      <summary>Identifiants avancés</summary>
+      <label for="f-zdc">Zone de correspondance IDFM de Gare de Lyon</label>
+      <input id="f-zdc" placeholder="Détectée automatiquement">
+      <label for="f-ligne">Code ligne R (référentiel IDFM)</label>
+      <input id="f-ligne" placeholder="C01731">
+      <label for="f-gare">Gare dans l'API SNCF</label>
+      <input id="f-gare" placeholder="stop_area:SNCF:87686006">
+      <label for="f-freq">Actualisation automatique (secondes)</label>
+      <input id="f-freq" type="number" min="30" step="10">
+    </details>
+
+    <div class="actions">
+      <button class="btn sec" value="annuler" formnovalidate>Annuler</button>
+      <button class="btn" value="ok" id="btn-enregistrer">Enregistrer</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="app.js"></script>
+</body>
+</html>
